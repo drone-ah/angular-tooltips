@@ -4,7 +4,7 @@
   'use strict';
 
   angular.module('720kb.tooltips', [])
-  .directive('tooltips', ['$window', '$compile', '$interpolate', function manageDirective($window, $compile, $interpolate) {
+  .directive('tooltips', ['$window', '$compile', '$interpolate', '$timeout', function manageDirective($window, $compile, $interpolate, $timeout) {
 
     var TOOLTIP_SMALL_MARGIN = 8 //px
       , TOOLTIP_MEDIUM_MARGIN = 9 //px
@@ -18,6 +18,7 @@
       'link': function linkingFunction($scope, element, attr) {
 
         var initialized = false
+          , cancelHide = false
           , thisElement = angular.element(element[0])
           , body = angular.element($window.document.getElementsByTagName('body')[0])
           , theTooltip
@@ -146,7 +147,12 @@
         };
 
         function onMouseLeaveAndMouseOut() {
-          $scope.hideTooltip();
+          cancelHide = false;
+          $timeout(function() {
+            if (!cancelHide) {
+              $scope.hideTooltip();
+            }
+          }, 500);
         }
 
         $scope.bindHideTriggers = function() {
@@ -161,6 +167,7 @@
         $scope.bindShowTriggers();
 
         $scope.showTooltip = function showTooltip () {
+          cancelHide = true;
           theTooltip.addClass(CSS_PREFIX + 'open');
           theTooltip.css('transition', 'opacity ' + speed + 'ms linear');
 
@@ -171,7 +178,12 @@
           }
 
           $scope.clearTriggers();
+          theTooltip.unbind(showTriggers, onMouseEnterAndMouseOver);
+          theTooltip.unbind(hideTriggers, onMouseLeaveAndMouseOut);
+
           $scope.bindHideTriggers();
+          theTooltip.bind(hideTriggers, onMouseLeaveAndMouseOut);
+          theTooltip.bind(showTriggers, onMouseEnterAndMouseOver);
         };
 
         $scope.hideTooltip = function hideTooltip () {
